@@ -30,7 +30,7 @@ debug = 0
 lto = "fat"
 opt-level = "z"
 panic = "abort"
-strip = true
+#strip = true
 
 [workspace.lints.clippy]
 # Warn when an app accidentally reaches for `std` while `core`/`alloc` would do.

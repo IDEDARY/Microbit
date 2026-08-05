@@ -12,13 +12,15 @@ use bevy_microbit::prelude::*;
 use cortex_m as _;
 use cortex_m_rt::entry;
 use embedded_alloc::LlffHeap as Heap;
-use panic_halt as _;
+//use panic_halt as _;
+use panic_rtt_target as _;
+use rtt_target::{rprintln, rtt_init_print};
 
 mod game;
 
 // A static heap backing used by the global allocator. Sized to fit the ECS
 // world within the micro:bit's 16 KiB of RAM (see README for the budget).
-const HEAP_SIZE: usize = 6 * 1024;
+const HEAP_SIZE: usize = 9 * 1024;
 
 /// Global allocator instance, handed the static heap buffer in `main`.
 #[global_allocator]
@@ -30,6 +32,9 @@ static mut HEAP_MEM: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
 /// Device entry point, mirroring the official Bevy app shape.
 #[entry]
 fn main() -> ! {
+    rtt_init_print!();
+    rprintln!("microbit: boot");
+
     // Initialise the allocator over the reserved static buffer.
     unsafe {
         HEAP.init(&raw mut HEAP_MEM as *mut u8 as usize, HEAP_SIZE);

@@ -580,7 +580,8 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "embedded-alloc",
- "panic-halt",
+ "panic-rtt-target",
+ "rtt-target",
 ]
 
 [[package]]
@@ -765,10 +766,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
-name = "panic-halt"
-version = "1.0.0"
+name = "panic-rtt-target"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a513e167849a384b7f9b746e517604398518590a9142f4846a32e3c2a4de7b11"
+checksum = "9a8116ffce1f89818647b84fba66d16cfdf3c0bee3c9320e606588d3e7415ce7"
+dependencies = [
+ "critical-section",
+ "portable-atomic",
+ "rtt-target",
+]
 
 [[package]]
 name = "pin-project-lite"
