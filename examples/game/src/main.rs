@@ -11,7 +11,7 @@ extern crate alloc;
 use bevy_microbit::prelude::*;
 use cortex_m as _;
 use cortex_m_rt::entry;
-use embedded_alloc::TlsfHeap as Heap;
+use embedded_alloc::LlffHeap as Heap;
 //use panic_halt as _;
 use panic_rtt_target as _;
 use rtt_target::{rprintln, rtt_init_print};
@@ -20,11 +20,11 @@ mod game;
 
 // A static heap backing used by the global allocator. Sized to fit the ECS
 // world within the micro:bit's 16 KiB of RAM (see README for the budget).
-const HEAP_SIZE: usize = 9 * 1024;
+const HEAP_SIZE: usize = 8 * 1024;
 
 /// Global allocator instance, handed the static heap buffer in `main`.
 #[global_allocator]
-static HEAP: Heap = Heap::empty();
+pub static HEAP: Heap = Heap::empty();
 
 // Backing memory for the global allocator (stored in `.bss`).
 //static mut HEAP_MEM: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
@@ -43,10 +43,9 @@ fn main() -> ! {
         embedded_alloc::init!(HEAP, HEAP_SIZE);
     }
 
-    // Assemble and run the application. The embedded runner never returns,
-    // so mark this point as unreachable.
-    App::new()
-        .add_plugins((MicrobitPlugins, game::GamePlugin))
-        .run();
-    unreachable!("the embedded runner never returns")
+    // Assemble and run the application. `start` drives the schedules in place
+    // (never copying the large `World` onto the MCU stack) and never returns.
+    let mut app = App::new();
+    app.add_plugins((MicrobitPlugins, game::GamePlugin));
+    bevy_microbit::start(&mut app);
 }

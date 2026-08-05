@@ -12,6 +12,7 @@
 
 use bevy_app::{App, AppExit, PostUpdate, PreUpdate, Startup, Update};
 use bevy_ecs::schedule::ScheduleLabel;
+use rtt_target::rprintln;
 
 use crate::render::RenderState;
 
@@ -45,6 +46,45 @@ pub fn microbit_runner(mut app: App) -> AppExit {
             app.world_mut().run_schedule(PreUpdate);
             app.world_mut().run_schedule(Update);
             app.world_mut().run_schedule(PostUpdate);
+        }
+
+        // Always refresh exactly one matrix row this tick.
+        app.world_mut().run_schedule(Tick);
+    }
+}
+
+/// Entry point recommended for the embedded target.
+///
+/// Unlike [`App::run`], this drives the schedules **in place** on the given
+/// `&mut App` and never copies the (comparatively large) `World` off the stack,
+/// so it is safe on the micro:bit's limited RAM. Runs `Startup` once, then
+/// loops forever running `PreUpdate`/`Update`/`PostUpdate` each frame and
+/// `Tick` every 1 ms. Never returns.
+pub fn start(app: &mut App) -> ! {
+    rprintln!("runner: enter");
+
+    // Run the one-time setup schedule.
+    app.world_mut().run_schedule(Startup);
+    rprintln!("runner: startup done");
+
+    let mut frames = 0usize;
+    loop {
+        // A new frame begins whenever the scan pointer wraps back to row 0.
+        let new_frame = app
+            .world_mut()
+            .get_resource::<RenderState>()
+            .expect("MicrobitPlugins not added")
+            .row
+            == 0;
+
+        if new_frame {
+            // Refresh inputs and the clock, then run the game logic.
+            app.world_mut().run_schedule(PreUpdate);
+            app.world_mut().run_schedule(Update);
+            app.world_mut().run_schedule(PostUpdate);
+
+            frames += 1;
+            rprintln!("runner: frame {}", frames);
         }
 
         // Always refresh exactly one matrix row this tick.

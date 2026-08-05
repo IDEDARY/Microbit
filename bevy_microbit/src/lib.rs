@@ -11,9 +11,8 @@
 //! use bevy_microbit::prelude::*;
 //!
 //! fn main() -> ! {
-//!     App::new()
-//!         .add_plugins((MicrobitPlugins, MyGamePlugin))
-//!         .run()
+//!     let app = App::new().add_plugins((MicrobitPlugins, MyGamePlugin));
+//!     bevy_microbit::start(app)
 //! }
 //! ```
 //!
@@ -43,6 +42,8 @@ pub use bevy_app;
 pub use bevy_ecs;
 pub use bevy_time;
 
+pub use crate::app::start;
+
 /// Registrar for every platform plugin required by a micro:bit app.
 ///
 /// Adding this plugin (e.g. `add_plugins((MicrobitPlugins, MyGamePlugin))`)
@@ -70,6 +71,7 @@ pub mod prelude {
     pub use bevy_ecs_macros::{Component, Resource};
     pub use bevy_time::{Time, Timer, TimerMode};
 
+    pub use crate::app::{start, microbit_runner, Tick};
     pub use crate::device::Entropy;
     pub use crate::framebuffer::FrameBuffer;
     pub use crate::input::{ButtonInput, GameButton};
