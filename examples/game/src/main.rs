@@ -11,7 +11,7 @@ extern crate alloc;
 use bevy_microbit::prelude::*;
 use cortex_m as _;
 use cortex_m_rt::entry;
-use embedded_alloc::LlffHeap as Heap;
+use embedded_alloc::TlsfHeap as Heap;
 //use panic_halt as _;
 use panic_rtt_target as _;
 use rtt_target::{rprintln, rtt_init_print};
@@ -26,8 +26,8 @@ const HEAP_SIZE: usize = 9 * 1024;
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
-/// Backing memory for the global allocator (stored in `.bss`).
-static mut HEAP_MEM: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
+// Backing memory for the global allocator (stored in `.bss`).
+//static mut HEAP_MEM: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
 
 /// Device entry point, mirroring the official Bevy app shape.
 #[entry]
@@ -36,8 +36,11 @@ fn main() -> ! {
     rprintln!("microbit: boot");
 
     // Initialise the allocator over the reserved static buffer.
-    unsafe {
+    /* unsafe {
         HEAP.init(&raw mut HEAP_MEM as *mut u8 as usize, HEAP_SIZE);
+    } */
+   unsafe {
+        embedded_alloc::init!(HEAP, HEAP_SIZE);
     }
 
     // Assemble and run the application. The embedded runner never returns,

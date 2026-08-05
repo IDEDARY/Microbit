@@ -6,6 +6,7 @@
 //! desktop mock by swapping the platform plugin.
 
 use bevy_microbit::prelude::*;
+use rtt_target::rprintln;
 
 /// Logical width of the playfield (matches the LED matrix columns).
 const WIDTH: usize = 5;
@@ -111,6 +112,7 @@ impl Plugin for GamePlugin {
         ).chain()); */
         app.add_systems(Update, |mut frame: ResMut<FrameBuffer>| {
             frame.set(0, 0, true);
+            rprintln!("Tick!");
         });
     }
 }
