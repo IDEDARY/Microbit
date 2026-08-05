@@ -37,11 +37,7 @@ fn main() -> ! {
     rprintln!("microbit: Alloc init");
 
     // Assemble and run the application.
-    let app = App::new()
-        .add_plugins((MicrobitPlugins, game::GamePlugin));
-        //.run()
-
-    rprintln!("Tick! heap used {}", crate::HEAP.used());
-
-    loop {}
+    App::new()
+        .add_plugins((MicrobitPlugins, game::GamePlugin))
+        .run()
 }
