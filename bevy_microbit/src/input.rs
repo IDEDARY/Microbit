@@ -6,9 +6,9 @@
 
 use alloc::collections::BTreeSet;
 
-use bevy_app::{App, Plugin, PreUpdate};
 use bevy_ecs::prelude::{ResMut, Resource};
 
+use crate::app::{App, Plugin, PreUpdate};
 use crate::device::{Device, read_button_pin};
 
 /// The physical buttons exposed to the game.

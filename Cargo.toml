@@ -18,7 +18,6 @@ readme = "README.md"
 
 # Shared dependency versions, resolved once per workspace.
 [workspace.dependencies]
-bevy_app = { version = "0.19", default-features = false, features = ["critical-section"] }
 bevy_ecs = { version = "0.19", default-features = false, features = ["critical-section"] }
 bevy_time = { version = "0.19", default-features = false, features = ["critical-section"] }
 

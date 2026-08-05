@@ -5,8 +5,9 @@
 //! (input, rendering) borrow that resource rather than touching the board
 //! themselves, which keeps the hardware initialization in exactly one place.
 
-use bevy_app::{App, Plugin, Startup};
 use bevy_ecs::prelude::{Commands, Resource};
+
+use crate::app::{App, Plugin, Startup};
 use embedded_hal::digital::InputPin;
 use microbit::board::{Board, Buttons};
 use microbit::gpio::DisplayPins;

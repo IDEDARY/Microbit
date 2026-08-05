@@ -5,13 +5,12 @@
 //! physical pins for one display row. This is the only module that knows about
 //! the micro:bit pin wiring.
 
-use bevy_app::{App, Plugin};
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::OutputPin;
 use microbit::gpio::DisplayPins;
 
-use crate::app::Tick;
+use crate::app::{App, Plugin, Tick};
 use crate::device::{Device, LED_LAYOUT};
 use crate::framebuffer::{FrameBuffer, WIDTH};
 

@@ -110,6 +110,7 @@ impl Plugin for GamePlugin {
             reset,
             draw,
         ).chain()); */
+        // Just for testing
         app.add_systems(Update, |mut frame: ResMut<FrameBuffer>| {
             frame.set(0, 0, true);
             rprintln!("Tick! heap used {}", crate::HEAP.used());

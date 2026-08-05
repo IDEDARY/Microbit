@@ -149,7 +149,6 @@ dependencies = [
 name = "bevy_microbit"
 version = "0.1.0"
 dependencies = [
- "bevy_app",
  "bevy_ecs",
  "bevy_ecs_macros",
  "bevy_time",
@@ -573,7 +572,6 @@ dependencies = [
 name = "game"
 version = "0.1.0"
 dependencies = [
- "bevy_app",
  "bevy_ecs",
  "bevy_microbit",
  "bevy_time",
