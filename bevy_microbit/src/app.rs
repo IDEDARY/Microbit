@@ -6,6 +6,14 @@ pub const FRAME_MILLIS: u32 = 3;
 /// The number of LED rows the display multiplexes across.
 pub const ROW_COUNT: usize = 3;
 
+/// High-cadence schedule (~1 ms) driving the LED matrix row scan.
+///
+/// Defined here rather than in `tiny_ecs` to demonstrate that any crate can
+/// mint its own schedule label via `#[derive(ScheduleLabel)]` without a central
+/// enum.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, tiny_ecs_macros::ScheduleLabel)]
+pub struct Tick;
+
 /// Registrar for every platform plugin required by a micro:bit app.
 ///
 /// Adding this plugin (e.g. `app.add_plugin(MicrobitPlugins)`) installs device

@@ -1,10 +1,16 @@
-//! A single schedule: an ordered, bounded list of systems run sequentially.
+//! Schedules, schedule labels, and the predefined label set.
 //!
-//! Schedules are keyed by a dynamic [`ScheduleLabel`](crate::system::ScheduleLabel)
-//! in the [`World`](crate::world::WorldApi); each schedule holds a bounded
-//! `heapless::Vec` of [`System`]s executed in registration order. There is no
-//! executor graph and no parallelism — only the programmatic ordering the app
-//! chooses when it calls `world.run_schedule(label)`.
+//! A schedule is an ordered, bounded list of systems run sequentially. Each
+//! schedule is keyed in the [`World`](crate::world::WorldApi) by the
+//! [`TypeId`](core::any::TypeId) of its label type, so any crate can mint a
+//! new label simply by declaring a unit struct and deriving
+//! [`ScheduleLabel`] — no central enum required.
+//!
+//! The four conventional labels ([`Startup`], [`PreUpdate`], [`Update`],
+//! [`PostUpdate`]) are predefined here so platform plugins and apps can share
+//! them without ceremony.
+
+use core::any::TypeId;
 
 use heapless::Vec as HVec;
 
@@ -12,6 +18,40 @@ use crate::system::System;
 
 /// Maximum number of systems per schedule.
 pub const MAX_SYSTEMS_PER: usize = 32;
+
+// ---------------------------------------------------------------------
+// --- Schedule labels -------------------------------------------------
+
+/// Marker trait for types that identify a schedule.
+///
+/// Implemented via `#[derive(ScheduleLabel)]` (or manually for the predefined
+/// labels below). The trait carries only a `'static` bound; the actual keying
+/// is done with [`TypeId::of`] at the call site, giving every label type a
+/// unique compile-time identity without a central registry.
+pub trait ScheduleLabel: 'static {}
+
+/// The one-time startup schedule.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct Startup;
+impl ScheduleLabel for Startup {}
+
+/// Runs at the start of each frame, before [`Update`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct PreUpdate;
+impl ScheduleLabel for PreUpdate {}
+
+/// Runs once per frame; holds the gameplay systems.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct Update;
+impl ScheduleLabel for Update {}
+
+/// Runs at the end of each frame, after [`Update`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct PostUpdate;
+impl ScheduleLabel for PostUpdate {}
+
+// ---------------------------------------------------------------------
+// --- Schedule --------------------------------------------------------
 
 /// A schedule: an ordered, bounded list of systems.
 pub struct Schedule {
@@ -33,13 +73,8 @@ impl Schedule {
     }
 
     /// Runs every system in registration order against the raw world pointer.
-    ///
-    /// `world` is a `*mut ()` to keep schedules type-erased; the concrete
-    /// `World` casts it back when invoking a system.
     pub fn run(&self, world: *mut ()) {
         for system in self.systems.iter() {
-            // `System` is `fn(*mut ())` (a safe function pointer); calling it
-            // is safe by the caller's invariant that `world` is valid.
             system(world);
         }
     }

@@ -48,7 +48,7 @@ where
     fn build(&self, app: &mut App<W>) {
         app.insert_resource(RenderState::new());
         app.insert_resource(FrameBuffer::new());
-        app.add_system(W::Label::tick(), render_row);
+        app.add_system(crate::app::Tick, render_row);
     }
 }
 

@@ -14,7 +14,7 @@ pub struct MicrobitTimePlugin;
 impl<W: WorldApi> Plugin<W> for MicrobitTimePlugin where W: HasResource<tiny_ecs::Time> {
     fn build(&self, app: &mut App<W>) {
         app.insert_resource(tiny_ecs::Time::new());
-        app.add_system(W::Label::pre_update(), advance_time);
+        app.add_system(tiny_ecs::schedule::PreUpdate, advance_time);
     }
 }
 

@@ -1,46 +1,36 @@
 //! The concrete `World`, schedule execution, entity lifetime, and the shared
-//! `World` trait generated against by `define_world!`.
+//! `WorldApi` trait generated against by `define_world!`.
 //!
 //! A `World` is a *concrete* struct produced per-application by the
 //! `define_world!` proc-macro rather than an open-ended dynamic registry:
 //! each component/resource lives in its own statically-sized slot, eliminating
 //! the `IndexMap`/`HashMap` bookkeeping that pushes `bevy_ecs` past the RAM
-//! budget. Schedules are a bounded `SmallMap` keyed by the app's
-//! [`ScheduleLabel`] type, with no executor or graph.
+//! budget. Schedules are a bounded `heapless::LinearMap` keyed by
+//! [`TypeId`](core::any::TypeId), so any crate can mint a label via
+//! `#[derive(ScheduleLabel)]` without a central enum.
 
 use crate::commands_buffer::CommandBuffer;
 use crate::entity::Entity;
-use crate::system::{ResourceInsRef, StandardSchedules, System};
+use crate::schedule::ScheduleLabel;
+use crate::system::{ResourceInsRef, System};
 
 /// Maximum number of schedules that may be registered.
-///
-/// Deliberately small: a micro:bit game uses a handful (Startup, PreUpdate,
-/// Update, PostUpdate, Tick). Bump if an app needs more.
 pub const MAX_SCHEDULES: usize = 12;
 
-/// Maximum number of systems per schedule.
-pub const MAX_SYSTEMS_PER: usize = 32;
-
-// ---------------------------------------------------------------------
-// --- World trait ------------------------------------------------------
-
-/// Behaviour every concrete `World<L>` produced by `define_world!` implements.
+/// Behaviour every concrete `World` produced by `define_world!` implements.
 ///
-/// `L` is the app's [`ScheduleLabel`] type, used as the key in the schedule
-/// map. The trait pulls the shared logic (schedules, entity allocation,
-/// command flushing) out of the generated struct, so the macro stays small.
+/// Schedules are keyed by [`TypeId`](core::any::TypeId) of the label type `L`,
+/// so the methods below are generic over `L: ScheduleLabel` and take the label
+/// as a zero-sized marker value (e.g. `world.run_schedule(Update)`).
 pub trait WorldApi {
-    /// The app's schedule label type, which must expose the standard labels.
-    type Label: StandardSchedules;
+    /// Adds a schedule under label `L` if it does not already exist.
+    fn add_schedule<L: ScheduleLabel>(&mut self, label: L);
 
-    /// Adds a schedule under `label` if it does not already exist.
-    fn add_schedule(&mut self, label: Self::Label);
+    /// Adds a `system` to the schedule identified by label `L`.
+    fn add_system<L: ScheduleLabel>(&mut self, label: L, system: System);
 
-    /// Adds a `system` to the schedule identified by `label`.
-    fn add_system(&mut self, label: Self::Label, system: System);
-
-    /// Runs the schedule identified by `label`, if it exists.
-    fn run_schedule(&mut self, label: &Self::Label);
+    /// Runs the schedule identified by label `L`, if it exists.
+    fn run_schedule<L: ScheduleLabel>(&mut self, label: L);
 
     /// Allocates a fresh entity id; returns `None` if the entity budget is
     /// exhausted.

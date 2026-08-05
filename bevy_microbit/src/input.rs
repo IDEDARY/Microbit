@@ -103,7 +103,7 @@ pub struct MicrobitInputPlugin;
 impl<W: WorldApi> Plugin<W> for MicrobitInputPlugin where W: HasResource<Device> + HasResource<ButtonInput<GameButton>> {
     fn build(&self, app: &mut App<W>) {
         app.insert_resource(ButtonInput::<GameButton>::default());
-        app.add_system(W::Label::pre_update(), read_buttons);
+        app.add_system(tiny_ecs::schedule::PreUpdate, read_buttons);
     }
 }
 

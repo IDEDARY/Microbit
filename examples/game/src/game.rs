@@ -1,7 +1,5 @@
 use bevy_microbit::prelude::*;
 
-use crate::GameSchedule;
-
 /// Logical width of the playfield (matches the LED matrix columns).
 const WIDTH: usize = 5;
 /// Height of the playfield (matches the LED matrix rows).
@@ -93,20 +91,20 @@ impl GameTimers {
 /// [`setup`] instead of a `Startup` system so the work happens at build time,
 /// before the runner loop begins.
 pub struct GamePlugin;
-impl Plugin<crate::World<GameSchedule>> for GamePlugin {
-    fn build(&self, app: &mut App<crate::World<GameSchedule>>) {
-        app.add_system(GameSchedule::Update, player_input);
-        app.add_system(GameSchedule::Update, spawn_debris);
-        app.add_system(GameSchedule::Update, fall_debris);
-        app.add_system(GameSchedule::Update, collision);
-        app.add_system(GameSchedule::Update, reset);
-        app.add_system(GameSchedule::Update, draw);
+impl Plugin<crate::World> for GamePlugin {
+    fn build(&self, app: &mut App<crate::World>) {
+        app.add_system(Update, player_input);
+        app.add_system(Update, spawn_debris);
+        app.add_system(Update, fall_debris);
+        app.add_system(Update, collision);
+        app.add_system(Update, reset);
+        app.add_system(Update, draw);
     }
 }
 
 /// Spawns the player and inserts the round-level resources. Called once from
 /// `main` before the runner loop starts.
-pub fn setup(world: &mut crate::World<GameSchedule>) {
+pub fn setup(world: &mut crate::World) {
     world.insert_resource(Score(0));
     world.insert_resource(GameState::default());
     world.insert_resource(GameTimers::new());

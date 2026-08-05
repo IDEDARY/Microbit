@@ -561,35 +561,3 @@ pub trait IntoSystem<W> {
     /// Returns the type-erased callable bound to world type `W`.
     fn into_system(self) -> System;
 }
-
-/// A label identifying a schedule, mirroring Bevy's `ScheduleLabel`.
-///
-/// Blanket-implemented for any type that is `PartialEq + Clone + Eq + Hash +
-/// Default + 'static`, so users only need to derive those bounds on their
-/// schedule enums/structs and use them as keys in the bounded schedule map.
-pub trait ScheduleLabel:
-    PartialEq + Clone + Eq + core::hash::Hash + Default + 'static
-{}
-impl<T> ScheduleLabel for T where
-    T: PartialEq + Clone + Eq + core::hash::Hash + Default + 'static
-{}
-
-/// Optional accessor for the five conventional schedules a Bevy app tends to
-/// use (`Startup`, `PreUpdate`, `Update`, `PostUpdate`, `Tick`).
-///
-/// Because schedule labels are otherwise arbitrary, platform plugins reach for
-/// these via the `World`'s `Label` type so they don't need to name the app's
-/// concrete enum. Apps that adopt the standard labels implement this trait
-/// (often via a tiny `match` body).
-pub trait StandardSchedules: ScheduleLabel {
-    /// The one-time startup schedule label.
-    fn startup() -> Self;
-    /// Runs at the start of each frame, before [`StandardSchedules::update`].
-    fn pre_update() -> Self;
-    /// Runs once per frame; holds the gameplay systems.
-    fn update() -> Self;
-    /// Runs at the end of each frame, after [`StandardSchedules::update`].
-    fn post_update() -> Self;
-    /// High-cadence schedule (e.g. a 1 ms display row scan).
-    fn tick() -> Self;
-}

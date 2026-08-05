@@ -29,7 +29,7 @@ pub mod prelude {
     pub use tiny_ecs::prelude::*;
     pub use tiny_ecs::{Component, Resource};
 
-    pub use crate::app::MicrobitPlugins;
+    pub use crate::app::{MicrobitPlugins, Tick};
     pub use crate::device::{Device, Entropy};
     pub use crate::framebuffer::FrameBuffer;
     pub use crate::input::{ButtonInput, ButtonKey, GameButton};

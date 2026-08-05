@@ -5,7 +5,6 @@
 //! ```ignore
 //! define_world! {
 //!     pub struct World {
-//!         label: GameSchedule,
 //!         entities: 64,
 //!         schedules: 8,
 //!         components {
@@ -20,13 +19,12 @@
 //! }
 //! ```
 //!
-//! The emitted `World` is a concrete struct generic over the schedule label
-//! type `L`, with one field per component column (`Column<T, N>`) and per
-//! resource (`Option<R>`), plus the entity free-list, the bounded schedule
-//! map, and the command buffer. The companion `ColumnRef`/`ResourceRef`/
-//! `ResourceInsRef`/`SpawnRef`/`CommandsRef` and `WorldApi` impls are
-//! generated so the `#[system]` macro can split borrows and the app can drive
-//! schedules.
+//! The emitted `World` is a concrete, non-generic struct with one field per
+//! component column (`Column<T, N>`) and per resource (`Option<R>`), plus the
+//! entity free-list, the bounded schedule map (keyed by `TypeId`), and the
+//! command buffer. The companion `ColumnRef`/`ResourceRef`/`ResourceInsRef`/
+//! `SpawnRef`/`CommandsRef` and `WorldApi` impls are generated so the
+//! `#[system]` macro can split borrows and the app can drive schedules.
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
@@ -62,8 +60,6 @@ pub(crate) struct WorldInput {
     vis: syn::Visibility,
     /// The `World` type name to emit.
     name: syn::Ident,
-    /// The schedule label type used as the map key.
-    label: syn::Type,
     /// The maximum number of live entities.
     entities: syn::Expr,
     /// The maximum number of schedules.
@@ -82,7 +78,6 @@ impl Parse for WorldInput {
         let body;
         syn::braced!(body in input);
 
-        let mut label: Option<syn::Type> = None;
         let mut entities: Option<syn::Expr> = None;
         let mut schedules: Option<syn::Expr> = None;
         let mut components: Vec<ComponentEntry> = Vec::new();
@@ -108,23 +103,19 @@ impl Parse for WorldInput {
 
             let key: syn::Ident = body.parse()?;
             let _colon: Token![:] = body.parse()?;
-            if key == "label" {
-                label = Some(body.parse()?);
-            } else if key == "entities" {
+            if key == "entities" {
                 entities = Some(body.parse()?);
             } else if key == "schedules" {
                 schedules = Some(body.parse()?);
             } else {
                 return Err(syn::Error::new(
                     key.span(),
-                    "unknown field; expected `label`, `entities`, `schedules`, `components`, or `resources`",
+                    "unknown field; expected `entities`, `schedules`, `components`, or `resources`",
                 ));
             }
             let _ = body.parse::<Token![,]>();
         }
 
-        let label = label
-            .ok_or_else(|| syn::Error::new(name.span(), "missing `label: <ScheduleLabel>`"))?;
         let entities = entities
             .ok_or_else(|| syn::Error::new(name.span(), "missing `entities: <MAX>`"))?;
         let schedules = schedules
@@ -133,7 +124,6 @@ impl Parse for WorldInput {
         Ok(WorldInput {
             vis,
             name,
-            label,
             entities,
             schedules,
             components,
@@ -185,7 +175,6 @@ impl WorldInput {
         let WorldInput {
             vis,
             name,
-            label,
             entities,
             schedules,
             components,
@@ -221,7 +210,6 @@ impl WorldInput {
             let pf = format_ident!("pending_{}", c.field);
             let t = &c.ty;
             let cap = &c.capacity;
-            // Each spawn pairs an entity index with the component value.
             quote! { #pf: ::heapless::Vec<(u32, #t), #cap> }
         });
         let comp_pending_inits = components.iter().map(|c| {
@@ -234,9 +222,7 @@ impl WorldInput {
             let f = &c.field;
             let t = &c.ty;
             quote! {
-                impl<L: ::tiny_ecs::system::ScheduleLabel>
-                    ::tiny_ecs::system::ColumnRef<#t> for #name<L>
-                {
+                impl ::tiny_ecs::system::ColumnRef<#t> for #name {
                     unsafe fn col_ref_raw(world: *mut Self) -> *const dyn ::tiny_ecs::column::ColumnOps<#t> {
                         unsafe { &(*world).#f as &dyn ::tiny_ecs::column::ColumnOps<#t> as *const _ }
                     }
@@ -255,9 +241,7 @@ impl WorldInput {
             let f = &r.field;
             let t = &r.ty;
             quote! {
-                impl<L: ::tiny_ecs::system::ScheduleLabel>
-                    ::tiny_ecs::system::ResourceRef<#t> for #name<L>
-                {
+                impl ::tiny_ecs::system::ResourceRef<#t> for #name {
                     unsafe fn res_ref_raw(world: *mut Self) -> *const #t {
                         unsafe { (*world).#f.as_ref().map_or(::core::ptr::null(), |r| r as *const #t) }
                     }
@@ -273,9 +257,7 @@ impl WorldInput {
             let f = &r.field;
             let t = &r.ty;
             quote! {
-                impl<L: ::tiny_ecs::system::ScheduleLabel>
-                    ::tiny_ecs::system::ResourceInsRef<#t> for #name<L>
-                {
+                impl ::tiny_ecs::system::ResourceInsRef<#t> for #name {
                     unsafe fn insert_resource(world: *mut Self, value: #t) {
                         unsafe { (*world).#f = ::core::option::Option::Some(value); }
                     }
@@ -288,9 +270,7 @@ impl WorldInput {
             let pf = format_ident!("pending_{}", c.field);
             let t = &c.ty;
             quote! {
-                impl<L: ::tiny_ecs::system::ScheduleLabel>
-                    ::tiny_ecs::system::SpawnRef<#t> for #name<L>
-                {
+                impl ::tiny_ecs::system::SpawnRef<#t> for #name {
                     unsafe fn enqueue_spawn(world: *mut Self, value: #t) -> ::tiny_ecs::entity::Entity {
                         // SAFETY: caller guarantees `world` is valid.
                         let w = unsafe { &mut *world };
@@ -304,14 +284,14 @@ impl WorldInput {
 
         // `CommandsRef` impl.
         let commands_ref_impl = quote! {
-            impl<L: ::tiny_ecs::system::ScheduleLabel> ::tiny_ecs::system::CommandsRef for #name<L> {
+            impl ::tiny_ecs::system::CommandsRef for #name {
                 unsafe fn commands_raw(world: *mut Self) -> *mut ::tiny_ecs::commands_buffer::CommandBuffer {
                     unsafe { &mut (*world).commands as *mut _ }
                 }
             }
         };
 
-        // Despawn touches every column + clears pending queues.
+        // Despawn touches every column.
         let comp_despawns = components.iter().map(|c| {
             let f = &c.field;
             quote! { self.#f.remove(idx as usize); }
@@ -329,7 +309,7 @@ impl WorldInput {
 
         let expanded = quote! {
             /// Auto-generated `World` produced by `tiny_ecs::define_world!`.
-            #vis struct #name<L: ::tiny_ecs::system::ScheduleLabel = #label> {
+            #vis struct #name {
                 /// Next entity index to hand out (monotonic until recycle).
                 next_index: u32,
                 /// Recycled entity ids available for reuse.
@@ -339,13 +319,13 @@ impl WorldInput {
                 #( #comp_fields, )*
                 #( #comp_pendings, )*
                 #( #res_fields, )*
-                /// Bounded schedule registry, keyed by the app's label type.
-                schedules: ::heapless::LinearMap<L, ::tiny_ecs::schedule::Schedule, { #schedules }>,
+                /// Bounded schedule registry, keyed by `TypeId` of the label.
+                schedules: ::heapless::LinearMap<::core::any::TypeId, ::tiny_ecs::schedule::Schedule, { #schedules }>,
                 /// Deferred despawn queue and pending-spawn drain buffer.
                 commands: ::tiny_ecs::commands_buffer::CommandBuffer,
             }
 
-            impl<L: ::tiny_ecs::system::ScheduleLabel> #name<L> {
+            impl #name {
                 /// Creates an empty `World` with zero entities and no resources.
                 #vis fn new() -> Self {
                     Self {
@@ -399,43 +379,34 @@ impl WorldInput {
                 }
             }
 
-            impl<L: ::tiny_ecs::system::ScheduleLabel> ::core::default::Default for #name<L> {
+            impl ::core::default::Default for #name {
                 fn default() -> Self {
                     Self::new()
                 }
             }
 
-            impl<L: ::tiny_ecs::system::StandardSchedules>
-                ::tiny_ecs::world::WorldApi for #name<L>
-            {
-                type Label = L;
-
-                fn add_schedule(&mut self, label: L) {
-                    let _ = self.schedules.insert(label, ::tiny_ecs::schedule::Schedule::new());
+            impl ::tiny_ecs::world::WorldApi for #name {
+                fn add_schedule<L: ::tiny_ecs::schedule::ScheduleLabel>(&mut self, _label: L) {
+                    let _ = self.schedules.insert(::core::any::TypeId::of::<L>(), ::tiny_ecs::schedule::Schedule::new());
                 }
 
-                fn add_system(&mut self, label: L, system: ::tiny_ecs::system::System) {
-                    // Insert into an existing schedule when present, otherwise
-                    // create one. Done without an entry API by trying `get_mut`
-                    // first and falling back to a fresh `insert`.
-                    if let ::core::option::Option::Some(sched) = self.schedules.get_mut(&label) {
+                fn add_system<L: ::tiny_ecs::schedule::ScheduleLabel>(&mut self, _label: L, system: ::tiny_ecs::system::System) {
+                    let id = ::core::any::TypeId::of::<L>();
+                    if let ::core::option::Option::Some(sched) = self.schedules.get_mut(&id) {
                         sched.add(system);
                         return;
                     }
                     let mut sched = ::tiny_ecs::schedule::Schedule::new();
                     sched.add(system);
-                    let _ = self.schedules.insert(label, sched);
+                    let _ = self.schedules.insert(id, sched);
                 }
 
-                fn run_schedule(&mut self, label: &L) {
+                fn run_schedule<L: ::tiny_ecs::schedule::ScheduleLabel>(&mut self, _label: L) {
                     // Derive the raw world pointer first, releasing any borrow
                     // before the immutable `&self.schedules` lookup below.
                     let world_ptr: *mut () = self as *mut Self as *mut ();
-                    if let ::core::option::Option::Some(sched) = self.schedules.get(label) {
-                        // Systems mutate disjoint fields through the raw
-                        // pointer (invisible to the borrow checker), so holding
-                        // the immutable `&self.schedules` borrow during `run`
-                        // is sound.
+                    let id = ::core::any::TypeId::of::<L>();
+                    if let ::core::option::Option::Some(sched) = self.schedules.get(&id) {
                         sched.run(world_ptr);
                     }
                 }
@@ -472,7 +443,7 @@ impl WorldInput {
                     #( #comp_flushes )*
                     // Then apply deferred despawns. Pop each command in its own
                     // statement so the `&mut self.commands` borrow ends before
-                    // `self.despawn` reborrowsthe whole world mutably.
+                    // `self.despawn` reborrows the whole world mutably.
                     loop {
                         let cmd = self.commands.drain().next();
                         match cmd {

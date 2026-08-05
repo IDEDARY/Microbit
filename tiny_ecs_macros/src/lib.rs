@@ -44,9 +44,22 @@ pub fn derive_resource(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-// `ScheduleLabel` is a blanket trait in `tiny_ecs::system`, so no derive is
-// required: every type with `PartialEq + Clone + Eq + Hash + Default + 'static`
-// already implements it.
+/// Derives [`tiny_ecs::schedule::ScheduleLabel`] for the annotated type.
+///
+/// The type must be `'static` (e.g. a unit struct). The label's identity is
+/// derived from its [`TypeId`](core::any::TypeId), so no additional fields or
+/// bounds are required — derive this trait, then pass the unit value as a
+/// marker: `app.add_system(MyLabel, system)`.
+#[proc_macro_derive(ScheduleLabel)]
+pub fn derive_schedule_label(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let expanded = quote! {
+        impl #impl_generics ::tiny_ecs::schedule::ScheduleLabel for #name #ty_generics #where_clause {}
+    };
+    expanded.into()
+}
 
 // ---------------------------------------------------------------------
 // --- `define_world!` -------------------------------------------------

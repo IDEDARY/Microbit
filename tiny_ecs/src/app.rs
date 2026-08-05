@@ -9,6 +9,7 @@
 //! fully programmatic and hardware-agnostic.
 
 use crate::commands_buffer::CommandBuffer;
+use crate::schedule::ScheduleLabel;
 use crate::system::{IntoSystem, ResourceInsRef};
 use crate::world::WorldApi;
 
@@ -60,14 +61,14 @@ impl<W: WorldApi> App<W> {
         self
     }
 
-    /// Adds a schedule under `label` if it does not already exist.
-    pub fn add_schedule(&mut self, label: W::Label) -> &mut Self {
+    /// Adds a schedule under label `L` if it does not already exist.
+    pub fn add_schedule<L: ScheduleLabel>(&mut self, label: L) -> &mut Self {
         self.world.add_schedule(label);
         self
     }
 
-    /// Adds a system to the schedule identified by `label`.
-    pub fn add_system<S: IntoSystem<W>>(&mut self, label: W::Label, system: S) -> &mut Self {
+    /// Adds a system to the schedule identified by label `L`.
+    pub fn add_system<L: ScheduleLabel, S: IntoSystem<W>>(&mut self, label: L, system: S) -> &mut Self {
         self.world.add_system(label, system.into_system());
         self
     }
@@ -78,9 +79,9 @@ impl<W: WorldApi> App<W> {
         self
     }
 
-    /// Runs the schedule identified by `label`, then drains the deferred
+    /// Runs the schedule identified by label `L`, then drains the deferred
     /// command buffer. Convenience for the developer-provided runner loop.
-    pub fn run_schedule_and_flush(&mut self, label: &W::Label) {
+    pub fn run_schedule_and_flush<L: ScheduleLabel>(&mut self, label: L) {
         self.world.run_schedule(label);
         self.world.flush_commands();
     }

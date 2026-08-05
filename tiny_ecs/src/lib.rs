@@ -10,29 +10,27 @@
 //!
 //! # Quick start
 //!
-//! Declare the `World`, `Plugin` and runner in your app crate:
-//!
 //! ```ignore
 //! tiny_ecs::define_world! {
 //!     pub struct World {
 //!         entities: 64,
 //!         schedules: 8,
-//!         label: GameSchedule,
 //!         components { player: Player [64], debris: Debris [64], }
 //!         resources { frame: FrameBuffer, time: Time, }
 //!     }
 //! }
 //!
-//! #[derive(tiny_ecs_macros::ScheduleLabel, Default, PartialEq, Eq, Hash, Clone)]
-//! enum GameSchedule { #[default] Startup, Update }
-//!
 //! fn main() -> ! {
-//!     let mut world = World::<GameSchedule>::new();
-//!     world.add_schedule(GameSchedule::Startup);
-//!     world.add_system(GameSchedule::Update, tiny_ecs::system(update));
-//!     World::run_schedule_raw(&mut world as *mut _ as *mut (), &GameSchedule::Update);
+//!     let mut world = World::new();
+//!     world.add_system(Update, draw);
+//!     world.run_schedule(Update);
 //! }
 //! ```
+//!
+//! Schedule labels are zero-sized types keyed by `TypeId`: `Startup`,
+//! `PreUpdate`, `Update`, and `PostUpdate` are predefined in
+//! [`schedule`](crate::schedule), and any crate can mint its own via
+//! `#[derive(ScheduleLabel)]` (e.g. `bevy_microbit::Tick`).
 //!
 //! The `App`/`Plugin` shell mirrors Bevy's ergonomics on top of the concrete
 //! `World`.
@@ -52,12 +50,10 @@ pub mod time;
 pub mod world;
 
 // Re-export the proc-macros so users only depend on `tiny_ecs`.
-// `Component`/`Resource` live in *both* namespaces here: the trait (type
-// namespace, defined below) and the derive macro (macro namespace, re-exported
-// from `tiny_ecs_macros`). The schedule-label trait is blanketed, so no
-// `ScheduleLabel` derive is needed — types with the right supertrait bounds
-// qualify automatically.
-pub use tiny_ecs_macros::{define_world, system, Component, Resource};
+// `Component`/`Resource`/`ScheduleLabel` live in *both* namespaces here: the
+// trait (type namespace, defined in the crate) and the derive macro (macro
+// namespace, re-exported from `tiny_ecs_macros`).
+pub use tiny_ecs_macros::{define_world, system, Component, Resource, ScheduleLabel};
 
 /// Re-exports the `Time`/`Timer` family at the crate root for convenience.
 pub use crate::time::{Time, Timer, TimerMode};
@@ -82,10 +78,10 @@ pub mod prelude {
     pub use crate::commands::{Commands, EntityTarget};
     pub use crate::commands_buffer::CommandBuffer;
     pub use crate::entity::Entity;
-    pub use crate::schedule::{Schedule, MAX_SYSTEMS_PER};
+    pub use crate::schedule::{Schedule, MAX_SYSTEMS_PER, ScheduleLabel, Startup, PreUpdate, Update, PostUpdate};
     pub use crate::system::{
-        ColumnRef, CommandsRef, Fetch, IntoSystem, Query, Res, ResMut, HasResource,
-        ScheduleLabel, SpawnRef, StandardSchedules, System,
+        ColumnRef, CommandsRef, Fetch, HasResource, IntoSystem, Query, Res, ResMut,
+        ResourceInsRef, ResourceRef, SpawnRef, System,
     };
     pub use crate::time::{Time, Timer, TimerMode};
     pub use crate::world::WorldApi;
