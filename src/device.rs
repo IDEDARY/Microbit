@@ -119,7 +119,7 @@ impl <const N: usize> Text<N> {
         }
 
         let mut bitmap: Vec<[[u8; 3]; 5], 16> = Vec::new();
-        for ch in self.string.chars().into_iter() {
+        for ch in self.string.chars() {
             let _ = bitmap.push(match ch {
                 '0' => NUM[0],
                 '1' => NUM[1],
@@ -219,9 +219,8 @@ impl <'a> Device<'a> {
         self.tick = self.tick.overflowing_add(1).0;
 
         // Tick text scroll alarm
-        if let Some(text) = &mut self.text {
-            if let Ok(mut aa) = text.alarm.try_borrow_mut() { aa.tick(); }
-        }
+        if let Some(text) = &mut self.text
+            && let Ok(mut aa) = text.alarm.try_borrow_mut() { aa.tick(); }
         // Tick all registered alarms
         for a in self.alarms.iter() {
             if let Ok(mut aa) = a.try_borrow_mut() { aa.tick(); }
@@ -245,7 +244,7 @@ impl Canvas {
         }
         for (y, row) in self.matrix.iter().enumerate() {
             for (x, value) in row.iter().enumerate() {
-                if LED_LAYOUT[y][x].0 == self.row && *value == true {
+                if LED_LAYOUT[y][x].0 == self.row && *value {
                     match LED_LAYOUT[y][x].1 {
                         0 => { pins.col1.set_low().unwrap() },
                         1 => { pins.col2.set_low().unwrap() },

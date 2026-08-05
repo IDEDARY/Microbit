@@ -64,13 +64,12 @@ fn main() -> ! {
             }
  
             // GAME END
-            if game_over {
-                if let None = device.text {
+            if game_over
+                && let None = device.text {
                     let mut t = String::new();
                     write!(t, "{}", score).unwrap();
                     device.text = Some(Text::from(t))
                 }
-            }
  
             // GAME
             if !game_over {
@@ -79,10 +78,8 @@ fn main() -> ! {
                 device.canvas.matrix[4][player_x] = true;
  
                 // DRAW DEBRIS
-                for rock in &mut debris {
-                    if let Some((x, y)) = rock {
-                        device.canvas.matrix[*y][*x] = true;
-                    }
+                for (x, y) in debris.iter_mut().flatten() {
+                    device.canvas.matrix[*y][*x] = true;
                 }
  
                 // DEBRIS LOGIC
@@ -108,7 +105,7 @@ fn main() -> ! {
                 if debris_spawn_alarm.borrow_mut().wait_for(500) {
                     let mut obstacle = OBSTACLES[device.rand.next_range(0..OBSTACLES.len())];
                     for rock in &mut debris {
-                        if let None = rock {
+                        if rock.is_none() {
                             for (i, obs) in &mut obstacle.iter_mut().enumerate() {
                                 if *obs == 1 {
                                     *obs = 0;
@@ -124,20 +121,16 @@ fn main() -> ! {
                 // PLAYER LOGIC
                 if player_move_cooldown != 0 { player_move_cooldown -= 1 }
  
-                if device.button_a.just_pressed() {
-                    if player_x != 0 && player_move_cooldown == 0 { player_x -= 1; player_move_cooldown = 5; }
-                }
+                if device.button_a.just_pressed()
+                    && player_x != 0 && player_move_cooldown == 0 { player_x -= 1; player_move_cooldown = 5; }
  
-                if device.button_b.just_pressed() {
-                    if player_x != 4 && player_move_cooldown == 0 { player_x += 1; player_move_cooldown = 5; }
-                }
+                if device.button_b.just_pressed()
+                    && player_x != 4 && player_move_cooldown == 0 { player_x += 1; player_move_cooldown = 5; }
                 
                 // COLLISION CHECK
-                for rock in &mut debris {
-                    if let Some((x, y)) = rock {
-                        if *x == player_x && *y == 4 {
-                            game_over = true;
-                        }
+                for (x, y) in debris.iter_mut().flatten() {
+                    if *x == player_x && *y == 4 {
+                        game_over = true;
                     }
                 }
             }
