@@ -87,34 +87,30 @@ impl GameTimers {
     }
 }
 
-/// Registers the game's systems. Resources and the player entity are wired by
-/// [`setup`] instead of a `Startup` system so the work happens at build time,
-/// before the runner loop begins.
+/// Registers the game's systems and initial world state (resources + player).
 pub struct GamePlugin;
 impl Plugin<crate::World> for GamePlugin {
     fn build(&self, app: &mut App<crate::World>) {
+        // Round-level resources.
+        app.world_mut().insert_resource(Score(0));
+        app.world_mut().insert_resource(GameState::default());
+        app.world_mut().insert_resource(GameTimers::new());
+
+        // Spawn the player entity with its move cooldown.
+        if let Some(entity) = app.world_mut().spawn_empty() {
+            app.world_mut().set_component(entity, Player { x: 2 });
+            app.world_mut().set_component(
+                entity,
+                MoveCooldown(Timer::from_seconds(MOVE_COOLDOWN_SECS, TimerMode::Once)),
+            );
+        }
+
         app.add_system(Update, player_input);
         app.add_system(Update, spawn_debris);
         app.add_system(Update, fall_debris);
         app.add_system(Update, collision);
         app.add_system(Update, reset);
         app.add_system(Update, draw);
-    }
-}
-
-/// Spawns the player and inserts the round-level resources. Called once from
-/// `main` before the runner loop starts.
-pub fn setup(world: &mut crate::World) {
-    world.insert_resource(Score(0));
-    world.insert_resource(GameState::default());
-    world.insert_resource(GameTimers::new());
-
-    if let Some(entity) = world.spawn_empty() {
-        world.set_component(entity, Player { x: 2 });
-        world.set_component(
-            entity,
-            MoveCooldown(Timer::from_seconds(MOVE_COOLDOWN_SECS, TimerMode::Once)),
-        );
     }
 }
 

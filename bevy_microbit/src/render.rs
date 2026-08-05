@@ -39,7 +39,7 @@ impl RenderState {
 
 /// Refreshes one row of the LED matrix every tick.
 pub struct MicrobitRenderingPlugin;
-impl<W: tiny_ecs::world::WorldApi> Plugin<W> for MicrobitRenderingPlugin
+impl<W: WorldApi> Plugin<W> for MicrobitRenderingPlugin
 where
     W: HasResource<Device>
         + HasResource<FrameBuffer>

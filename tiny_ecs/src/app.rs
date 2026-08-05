@@ -24,6 +24,18 @@ pub trait Plugin<W: WorldApi> {
     fn build(&self, app: &mut App<W>);
 }
 
+/// The status code returned by a runner when it exits.
+///
+/// Mirrors Bevy's `AppExit`. Most embedded runners never return (they loop
+/// forever), but the type lets desktop runners signal graceful termination.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AppExit {
+    /// The runner completed successfully.
+    Success,
+    /// The runner encountered a fatal error.
+    Error,
+}
+
 /// The embedded application owner, wrapping a single concrete `World`.
 pub struct App<W: WorldApi> {
     /// The underlying world holding all resources, entities and schedules.
@@ -84,6 +96,21 @@ impl<W: WorldApi> App<W> {
     pub fn run_schedule_and_flush<L: ScheduleLabel>(&mut self, label: L) {
         self.world.run_schedule(label);
         self.world.flush_commands();
+    }
+
+    /// Consumes the app and passes the world to a runner function that owns the
+    /// main loop. Mirrors Bevy's `App::run`, but the runner is supplied by the
+    /// caller (e.g. `bevy_microbit::microbit_runner`) so scheduling stays
+    /// programmatic and hardware-agnostic.
+    ///
+    /// The runner returns [`AppExit`]; most embedded runners loop forever and
+    /// never actually produce a value, so the caller can follow the call with
+    /// `unreachable!()`.
+    pub fn run<F>(&mut self, runner: F) -> AppExit
+    where
+        F: FnOnce(&mut W) -> AppExit,
+    {
+        runner(&mut self.world)
     }
 
     /// Returns a raw pointer to the world's command buffer (for advanced

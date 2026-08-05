@@ -139,12 +139,11 @@ fn expand_system(item: ItemFn) -> syn::Result<TokenStream2> {
     }
 
     let w = format_ident!("__W");
-    // Build generic bounds: `__W: ColumnRef<T> + SpawnRef<T> + ResourceRef<R> +
-    // ResourceInsRef<R> + ...`. Adding `SpawnRef<T>` next to every queried
-    // component (and `ResourceInsRef<R>` next to every read resource) lets a
-    // system call `commands.spawn::<T>(value)` for a component it also queries
-    // and `commands.insert_resource::<R>(value)` for a resource it reads,
-    // without the macro inspecting the body for the exact spawn/insert types.
+    // Build generic bounds: `__W: ColumnRef<T> + SpawnRef<T> + HasResource<R> +
+    // ...`. `HasResource<R>` bundles `ResourceRef<R> + ResourceInsRef<R>`, so a
+    // system can both read (`Res`/`ResMut`) and insert a resource it touches.
+    // `SpawnRef<T>` next to every queried component lets a system
+    // `commands.spawn::<T>(value)` for a component it also queries.
     let mut bounds: Vec<syn::TypeParamBound> = Vec::new();
     bounds.push(parse_quote!(Sized));
     for (p, _, _) in &params {
@@ -156,8 +155,7 @@ fn expand_system(item: ItemFn) -> syn::Result<TokenStream2> {
                 }
             }
             SystemParam::Res(ty, _) | SystemParam::ResMut(ty, _) => {
-                bounds.push(parse_quote!(::tiny_ecs::system::ResourceRef<#ty>));
-                bounds.push(parse_quote!(::tiny_ecs::system::ResourceInsRef<#ty>));
+                bounds.push(parse_quote!(::tiny_ecs::system::HasResource<#ty>));
             }
             SystemParam::Commands(_) => {
                 bounds.push(parse_quote!(::tiny_ecs::system::CommandsRef));
@@ -222,6 +220,7 @@ fn expand_system(item: ItemFn) -> syn::Result<TokenStream2> {
         }
 
         #[doc(hidden)]
+        #[allow(non_camel_case_types)]
         #vis struct #sys_struct_name;
 
         impl<#w: #(#bounds)+*> ::tiny_ecs::system::IntoSystem<#w> for #sys_struct_name {

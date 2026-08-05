@@ -42,42 +42,14 @@ fn main() -> ! {
     rtt_init_print!();
     rprintln!("microbit: boot");
 
-    // A frame is exactly three display row scans (3 ms).
-    const ROWS_PER_FRAME: usize = 3;
-
-    // Assemble the world and install every platform plugin plus the game.
+    // Create the ECS world
     let world = World::new();
-    let mut app = App::new(world);
-    app.add_plugin(MicrobitPlugins);
-    app.add_plugin(game::GamePlugin);
 
-    let mut world = app.into_world();
+    // Create the app and run it
+    App::new(world)
+        .add_plugin(MicrobitPlugins)
+        .add_plugin(game::GamePlugin)
+        .run(microbit_runner);
 
-    // Run one-time setup explicitly (player spawn, round resources).
-    game::setup(&mut world);
-    world.run_schedule(Startup);
-    world.flush_commands();
-    rprintln!("microbit: startup done");
-
-    // The runner loop: drive the schedules at the micro:bit's cadence. Each
-    // iteration is one 1 ms display row scan; every third scan is a new frame.
-    let mut tick = 0usize;
-    let mut frames = 0usize;
-    loop {
-        // Refresh exactly one matrix row this tick.
-        world.run_schedule(Tick);
-        world.flush_commands();
-
-        tick = tick.wrapping_add(1);
-        if tick.is_multiple_of(ROWS_PER_FRAME) {
-            // Refresh inputs and the clock, then run the game logic.
-            world.run_schedule(PreUpdate);
-            world.run_schedule(Update);
-            world.run_schedule(PostUpdate);
-            world.flush_commands();
-
-            frames += 1;
-            rprintln!("runner: frame {}", frames);
-        }
-    }
+    unreachable!("microbit_runner should never return")
 }

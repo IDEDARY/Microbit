@@ -120,14 +120,12 @@ pub struct Res<'a, R: Resource> {
     /// The borrowed resource value.
     value: &'a R,
 }
-
 impl<'a, R: Resource> Res<'a, R> {
     /// Creates a `Res` from a borrow.
     pub const fn new(value: &'a R) -> Self {
         Self { value }
     }
 }
-
 impl<R: Resource> core::ops::Deref for Res<'_, R> {
     type Target = R;
     fn deref(&self) -> &R {
@@ -140,21 +138,18 @@ pub struct ResMut<'a, R: Resource> {
     /// The borrowed resource value.
     value: &'a mut R,
 }
-
 impl<'a, R: Resource> ResMut<'a, R> {
     /// Creates a `ResMut` from a mutable borrow.
     pub fn new(value: &'a mut R) -> Self {
         Self { value }
     }
 }
-
 impl<R: Resource> core::ops::Deref for ResMut<'_, R> {
     type Target = R;
     fn deref(&self) -> &R {
         self.value
     }
 }
-
 impl<R: Resource> core::ops::DerefMut for ResMut<'_, R> {
     fn deref_mut(&mut self) -> &mut R {
         self.value
@@ -181,7 +176,6 @@ pub struct Query<'w, F: Fetch<'w, W> + 'w, W> {
     /// Ties `'w` to the world borrow.
     _life: PhantomData<&'w W>,
 }
-
 impl<'w, F: Fetch<'w, W> + 'w, W> Query<'w, F, W> {
     /// Builds a query from a raw world pointer.
     ///
@@ -256,7 +250,6 @@ pub struct QueryIter<'s, 'w, F: Fetch<'w, W> + 'w, W> {
     /// Ties `'w` to the world.
     _life: PhantomData<&'w W>,
 }
-
 impl<'s, 'w, F: Fetch<'w, W> + 'w, W> Iterator for QueryIter<'s, 'w, F, W> {
     type Item = F::Item<'w>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -270,7 +263,6 @@ impl<'s, 'w, F: Fetch<'w, W> + 'w, W> Iterator for QueryIter<'s, 'w, F, W> {
         None
     }
 }
-
 impl<'s, 'w, F: Fetch<'w, W> + 'w, W> IntoIterator for &'s Query<'w, F, W> {
     type Item = F::Item<'w>;
     type IntoIter = QueryIter<'s, 'w, F, W>;
@@ -294,7 +286,6 @@ pub struct QueryIterMut<'s, 'w, F: Fetch<'w, W> + 'w, W> {
     /// Ties `'w` to the world.
     _life: PhantomData<&'w W>,
 }
-
 impl<'s, 'w, F: Fetch<'w, W> + 'w, W> Iterator for QueryIterMut<'s, 'w, F, W> {
     type Item = F::Item<'w>;
     fn next(&mut self) -> Option<Self::Item> {
@@ -308,7 +299,6 @@ impl<'s, 'w, F: Fetch<'w, W> + 'w, W> Iterator for QueryIterMut<'s, 'w, F, W> {
         None
     }
 }
-
 impl<'s, 'w, F: Fetch<'w, W> + 'w, W> IntoIterator for &'s mut Query<'w, F, W> {
     type Item = F::Item<'w>;
     type IntoIter = QueryIterMut<'s, 'w, F, W>;
@@ -494,12 +484,12 @@ unsafe impl<'w, T: 'static, U: 'static, W: ColumnRef<T> + ColumnRef<U>> Fetch<'w
     }
 }
 
+
 /// `(Entity, &T)` — drives iteration off `T`'s column.
 pub struct EntityRefState<T: 'static> {
     /// The driving column pointer.
     pub col: *const dyn ColumnOps<T>,
 }
-
 unsafe impl<'w, T: 'static, W: ColumnRef<T>> Fetch<'w, W> for (Entity, &'w T) {
     type State = EntityRefState<T>;
     type Item<'i>
@@ -525,7 +515,6 @@ pub struct EntityMutState<T: 'static> {
     /// The driving column pointer.
     pub col: *mut dyn ColumnOps<T>,
 }
-
 unsafe impl<'w, T: 'static, W: ColumnRef<T>> Fetch<'w, W> for (Entity, &'w mut T) {
     type State = EntityMutState<T>;
     type Item<'i>

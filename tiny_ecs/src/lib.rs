@@ -73,7 +73,7 @@ pub trait Resource: 'static {}
 /// Re-exports the most-used names so `use tiny_ecs::prelude::*` reads like a
 /// desktop Bevy import.
 pub mod prelude {
-    pub use crate::app::{App, Plugin, Plugins};
+    pub use crate::app::{App, AppExit, Plugin, Plugins};
     pub use crate::column::{Column, ColumnOps};
     pub use crate::commands::{Commands, EntityTarget};
     pub use crate::commands_buffer::CommandBuffer;

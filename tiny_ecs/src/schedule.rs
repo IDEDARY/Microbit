@@ -10,8 +10,6 @@
 //! [`PostUpdate`]) are predefined here so platform plugins and apps can share
 //! them without ceremony.
 
-use core::any::TypeId;
-
 use heapless::Vec as HVec;
 
 use crate::system::System;
@@ -58,7 +56,6 @@ pub struct Schedule {
     /// The systems to run, in registration order.
     systems: HVec<System, MAX_SYSTEMS_PER>,
 }
-
 impl Schedule {
     /// Creates an empty schedule.
     pub const fn new() -> Self {
@@ -89,7 +86,6 @@ impl Schedule {
         self.systems.is_empty()
     }
 }
-
 impl Default for Schedule {
     fn default() -> Self {
         Self::new()

@@ -14,7 +14,7 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Entity(
     /// The raw index.
-    pub u32,
+    u32,
 );
 
 impl Entity {
