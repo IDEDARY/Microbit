@@ -7,15 +7,14 @@ repository.workspace = true
 description = "A no_std Bevy backend for the BBC micro:bit V1 (nRF51822), exposing an API mirroring official Bevy."
 
 [dependencies]
-bevy_ecs.workspace = true
-bevy_ecs_macros = "0.19.0"
-bevy_time.workspace = true
-cortex-m = { version = "0.7.8", features = ["critical-section-single-core"] }
+tiny_ecs.workspace = true
+tiny_ecs_macros.workspace = true
+cortex-m.workspace = true
 cortex-m-rt = "0.7.6"
-embedded-hal = "1.0.0"
-microbit = "0.16.0"
-rtt-target = "0.6.2"
-tinyrand = "0.5.0"
+embedded-hal.workspace = true
+microbit.workspace = true
+rtt-target.workspace = true
+tinyrand.workspace = true
 
 [lints]
 workspace = true

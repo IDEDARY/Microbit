@@ -1,12 +1,6 @@
-//! The debris-dodging mini-game, written entirely with Bevy primitives.
-//!
-//! There is not a single Microbit type in this file: it imports only the
-//! generic interfaces exposed by `bevy_microbit` (`ButtonInput`, `FrameBuffer`,
-//! `Entropy` plus the official Bevy types). The same modules would run on a
-//! desktop mock by swapping the platform plugin.
-
 use bevy_microbit::prelude::*;
-use rtt_target::rprintln;
+
+use crate::GameSchedule;
 
 /// Logical width of the playfield (matches the LED matrix columns).
 const WIDTH: usize = 5;
@@ -20,8 +14,6 @@ const SPAWN_INTERVAL_SECS: f32 = 0.5;
 const FALL_INTERVAL_SECS: f32 = 0.1;
 
 /// The set of falling silhouette rows that can spawn, one per entry.
-///
-/// `true` marks a column occupied by debris in that pattern.
 const OBSTACLES: [[bool; WIDTH]; 11] = [
     [true, false, true, false, true],
     [false, true, true, true, false],
@@ -37,34 +29,34 @@ const OBSTACLES: [[bool; WIDTH]; 11] = [
 ];
 
 /// The player's paddle, represented as a single entity.
-#[derive(Component)]
-struct Player {
+#[derive(Component, Debug)]
+pub struct Player {
     /// Column the player currently occupies (0-4).
-    x: usize,
+    pub x: usize,
 }
 
 /// A single falling piece of debris.
-#[derive(Component)]
-struct Debris {
+#[derive(Component, Debug)]
+pub struct Debris {
     /// Column the debris currently occupies (0-4).
-    x: usize,
+    pub x: usize,
     /// Row the debris currently occupies (0-4).
-    y: usize,
+    pub y: usize,
 }
 
 /// Length of time since the player last moved.
-#[derive(Component)]
-struct MoveCooldown(Timer);
+#[derive(Component, Debug)]
+pub struct MoveCooldown(pub Timer);
 
 /// The player's running score.
-#[derive(Resource, Default)]
-struct Score(usize);
+#[derive(Resource, Debug, Default)]
+pub struct Score(pub usize);
 
 /// Top-level game state shared across systems.
-#[derive(Resource)]
-struct GameState {
+#[derive(Resource, Debug)]
+pub struct GameState {
     /// Whether the last round has ended (awaiting a reset).
-    game_over: bool,
+    pub game_over: bool,
 }
 impl Default for GameState {
     /// Starts a fresh round.
@@ -74,16 +66,16 @@ impl Default for GameState {
 }
 
 /// The spawn and fall cadences, ticked every frame.
-#[derive(Resource)]
-struct GameTimers {
+#[derive(Resource, Debug)]
+pub struct GameTimers {
     /// Drives new row spawning.
-    spawn: Timer,
+    pub spawn: Timer,
     /// Drives the falling movement.
-    fall: Timer,
+    pub fall: Timer,
 }
 impl GameTimers {
     /// Creates the timers with the configured cadences.
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             spawn: Timer::from_seconds(SPAWN_INTERVAL_SECS, TimerMode::Repeating),
             fall: Timer::from_seconds(FALL_INTERVAL_SECS, TimerMode::Repeating),
@@ -91,45 +83,45 @@ impl GameTimers {
     }
 
     /// Restarts both timers from the beginning (used on reset).
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.spawn.reset();
         self.fall.reset();
     }
 }
 
-/// Registers the game's resources, entities, and systems.
+/// Registers the game's systems. Resources and the player entity are wired by
+/// [`setup`] instead of a `Startup` system so the work happens at build time,
+/// before the runner loop begins.
 pub struct GamePlugin;
-impl Plugin for GamePlugin {
-    fn build(&self, app: &mut App) {
-        /* app.add_systems(Startup, setup);
-        app.add_systems(Update, (
-            player_input,
-            spawn_debris,
-            fall_debris,
-            collision,
-            reset,
-            draw,
-        ).chain()); */
-        // Just for testing
-        app.add_systems(Update, |mut frame: ResMut<FrameBuffer>| {
-            frame.set(0, 0, true);
-            rprintln!("Tick! heap used {}", crate::HEAP.used());
-        });
+impl Plugin<crate::World<GameSchedule>> for GamePlugin {
+    fn build(&self, app: &mut App<crate::World<GameSchedule>>) {
+        app.add_system(GameSchedule::Update, player_input);
+        app.add_system(GameSchedule::Update, spawn_debris);
+        app.add_system(GameSchedule::Update, fall_debris);
+        app.add_system(GameSchedule::Update, collision);
+        app.add_system(GameSchedule::Update, reset);
+        app.add_system(GameSchedule::Update, draw);
     }
 }
 
-/// Spawns the player and inserts the round-level resources.
-fn setup(mut commands: Commands) {
-    commands.insert_resource(Score(0));
-    commands.insert_resource(GameState::default());
-    commands.insert_resource(GameTimers::new());
-    commands.spawn((
-        Player { x: 2 },
-        MoveCooldown(Timer::from_seconds(MOVE_COOLDOWN_SECS, TimerMode::Once)),
-    ));
+/// Spawns the player and inserts the round-level resources. Called once from
+/// `main` before the runner loop starts.
+pub fn setup(world: &mut crate::World<GameSchedule>) {
+    world.insert_resource(Score(0));
+    world.insert_resource(GameState::default());
+    world.insert_resource(GameTimers::new());
+
+    if let Some(entity) = world.spawn_empty() {
+        world.set_component(entity, Player { x: 2 });
+        world.set_component(
+            entity,
+            MoveCooldown(Timer::from_seconds(MOVE_COOLDOWN_SECS, TimerMode::Once)),
+        );
+    }
 }
 
 /// Moves the player left/right on button input, gated by a short cooldown.
+#[system]
 fn player_input(
     input: Res<ButtonInput<GameButton>>,
     time: Res<Time>,
@@ -139,7 +131,7 @@ fn player_input(
     if state.game_over {
         return;
     }
-    let Ok((mut player, mut cooldown)) = player.single_mut() else {
+    let Ok((player, cooldown)) = player.single_mut() else {
         return;
     };
 
@@ -158,6 +150,7 @@ fn player_input(
 }
 
 /// Periodically spawns a random obstacle pattern into free columns.
+#[system]
 fn spawn_debris(
     time: Res<Time>,
     state: Res<GameState>,
@@ -183,6 +176,7 @@ fn spawn_debris(
 }
 
 /// Advances every piece of debris one row, scoring when one exits the display.
+#[system]
 fn fall_debris(
     time: Res<Time>,
     state: Res<GameState>,
@@ -197,7 +191,7 @@ fn fall_debris(
         return;
     }
 
-    for (entity, mut piece) in &mut debris {
+    for (entity, piece) in &mut debris {
         if piece.y >= HEIGHT - 1 {
             // The piece reached the bottom and is removed for a point.
             commands.entity(entity).despawn();
@@ -209,22 +203,22 @@ fn fall_debris(
 }
 
 /// Ends the round when the falling debris reaches the player.
-fn collision(
-    mut state: ResMut<GameState>,
-    player: Query<&Player>,
-    debris: Query<&Debris>,
-) {
+#[system]
+fn collision(mut state: ResMut<GameState>, player: Query<&Player>, debris: Query<&Debris>) {
     if state.game_over {
         return;
     }
     let Ok(player) = player.single() else {
         return;
     };
-    let hit = debris.iter().any(|piece| piece.x == player.x && piece.y == HEIGHT - 1);
+    let hit = debris
+        .iter()
+        .any(|piece| piece.x == player.x && piece.y == HEIGHT - 1);
     state.game_over = hit;
 }
 
 /// Starts a fresh round when A is pressed after a game over.
+#[system]
 fn reset(
     input: Res<ButtonInput<GameButton>>,
     mut state: ResMut<GameState>,
@@ -244,13 +238,14 @@ fn reset(
     for (entity, _) in &debris {
         commands.entity(entity).despawn();
     }
-    if let Ok((mut player, mut cooldown)) = player.single_mut() {
+    if let Ok((player, cooldown)) = player.single_mut() {
         player.x = 2;
         cooldown.0.reset();
     }
 }
 
 /// Renders the player and all debris into the shared frame buffer.
+#[system]
 fn draw(mut frame: ResMut<FrameBuffer>, player: Query<&Player>, debris: Query<&Debris>) {
     frame.clear();
     if let Ok(player) = player.single() {

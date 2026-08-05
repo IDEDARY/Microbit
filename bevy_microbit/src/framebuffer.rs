@@ -1,11 +1,10 @@
 //! A software frame buffer representing the 5x5 LED matrix.
 //!
-//! This type is intentionally hardware-agnostic: it is a plain grid of booleans
-//! that the game draws into. The [`crate::render::MicrobitRenderingPlugin`] is
-//! the only component that knows how to scan those pixels out to the physical
+//! Hardware-agnostic: a plain grid of booleans that the game draws into. The
+//! [`crate::render::MicrobitRenderingPlugin`] scans it out to the physical
 //! LEDs, so [`FrameBuffer`] could equally be presented by a desktop mock.
 
-use bevy_ecs::prelude::Resource;
+use tiny_ecs::Resource;
 
 /// Width of the micro:bit LED matrix (5 columns).
 pub const WIDTH: usize = 5;
@@ -13,7 +12,7 @@ pub const WIDTH: usize = 5;
 pub const HEIGHT: usize = 5;
 
 /// A `WIDTH`x`HEIGHT` grid of on/off pixels, shared between the game and the
-/// renderer as a Bevy resource.
+/// renderer as a resource.
 #[derive(Clone, Debug, Resource)]
 pub struct FrameBuffer {
     /// The pixel matrix, indexed as `grid[row][column]`.
@@ -27,7 +26,7 @@ impl Default for FrameBuffer {
 }
 impl FrameBuffer {
     /// Creates a new, fully cleared frame buffer.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             grid: [[false; WIDTH]; HEIGHT],
         }
