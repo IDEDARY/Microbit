@@ -1,14 +1,14 @@
 [default.probe]
-protocol = "Swd"
+  protocol = "Swd"
 
 [default.general]
-chip = "nrf51822_xxAA" # uncomment this line for micro:bit V1
+  chip = "nrf51822_xxAA"
 
 [default.reset]
-halt_afterwards = false
+  halt_afterwards = false
 
 [default.rtt]
-enabled = true
+  enabled = true
 
 [default.gdb]
-enabled = false
+  enabled = false
