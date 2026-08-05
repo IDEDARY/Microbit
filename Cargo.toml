@@ -1,15 +1,39 @@
-[package]
-  edition = "2024"
-  name    = "microbit"
-  version = "0.1.0"
+# Workspace manifest for the Bevy-powered Microbit V1 game.
+#
+# All hardware interaction lives in the `bevy_microbit` library crate, exposed
+# through a Bevy-idiomatic API (`App`, `Plugin`, `Startup`/`Update` schedules,
+# `Res<Time>`, `ButtonInput`, `FrameBuffer`). The actual game is a normal Bevy
+# app in `examples/game` and is intentionally free of any Microbit-specific
+# types so it reads like it would run on a desktop.
+[workspace]
+resolver = "2"
+members = ["bevy_microbit", "examples/game"]
 
-[dependencies]
-  cortex-m         = { version = "0.7.8", features = ["critical-section-single-core"] }
-  cortex-m-rt      = "0.7.6"
-  embedded-hal     = "1.0.0"
-  heapless         = "0.9.3"
-  microbit         = "0.16.0"
-  panic-halt       = "1.0.0"
-  panic-rtt-target = { version = "0.2.0" }
-  rtt-target       = { version = "0.6.2" }
-  tinyrand         = "0.5.0"
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/your/repo"
+readme = "README.md"
+
+# Shared dependency versions, resolved once per workspace.
+[workspace.dependencies]
+bevy_app = { version = "0.19", default-features = false, features = ["critical-section"] }
+bevy_ecs = { version = "0.19", default-features = false, features = ["critical-section"] }
+bevy_time = { version = "0.19", default-features = false, features = ["critical-section"] }
+
+# A Microbit V1 has 256 KiB of flash and only 16 KiB of RAM, so we optimise
+# aggressively for size and link a single fat-LTO unit.
+[profile.release]
+codegen-units = 1
+debug = 0
+lto = "fat"
+opt-level = "z"
+panic = "abort"
+strip = true
+
+[workspace.lints.clippy]
+# Warn when an app accidentally reaches for `std` while `core`/`alloc` would do.
+std_instead_of_core = "warn"
+std_instead_of_alloc = "warn"
+alloc_instead_of_core = "warn"

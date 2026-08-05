@@ -1,0 +1,26 @@
+[package]
+name = "game"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "The ported debris-dodging game, written as a desktop-style Bevy app."
+
+[[bin]]
+name = "game"
+path = "src/main.rs"
+
+[dependencies]
+bevy_microbit = { path = "../../bevy_microbit" }
+# Direct deps are required so the `Component`/`Resource` derive macros can
+# resolve the `bevy_ecs` crate path in their generated code.
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+bevy_time.workspace = true
+cortex-m = { version = "0.7.8", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.6"
+embedded-alloc = "0.7"
+panic-halt = "1.0"
+
+[lints]
+workspace = true

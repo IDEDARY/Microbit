@@ -1,0 +1,22 @@
+[package]
+name = "bevy_microbit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A no_std Bevy backend for the BBC micro:bit V1 (nRF51822), exposing an API mirroring official Bevy."
+
+[dependencies]
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+bevy_ecs_macros = "0.19.0"
+bevy_time.workspace = true
+cortex-m = { version = "0.7.8", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.6"
+embedded-hal = "1.0.0"
+microbit = "0.16.0"
+rtt-target = "0.6.2"
+tinyrand = "0.5.0"
+
+[lints]
+workspace = true
