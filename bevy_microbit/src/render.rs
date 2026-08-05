@@ -26,7 +26,6 @@ pub struct RenderState {
     /// The physical row (0-2) being scanned this tick.
     pub(crate) row: usize,
 }
-
 impl Default for RenderState {
     /// Starts scanning from the first row.
     fn default() -> Self {
@@ -36,7 +35,6 @@ impl Default for RenderState {
 
 /// Refreshes one row of the LED matrix every tick.
 pub struct MicrobitRenderingPlugin;
-
 impl Plugin for MicrobitRenderingPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RenderState::default());

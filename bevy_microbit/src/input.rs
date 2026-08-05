@@ -6,10 +6,9 @@
 
 use alloc::collections::BTreeSet;
 
-use bevy_app::{App, Plugin};
+use bevy_app::{App, Plugin, PreUpdate};
 use bevy_ecs::prelude::{ResMut, Resource};
 
-use crate::app::PreFrame;
 use crate::device::{Device, read_button_pin};
 
 /// The physical buttons exposed to the game.
@@ -33,7 +32,6 @@ pub struct ButtonInput<T> {
     /// Buttons that transitioned to released since the last frame.
     just_released: BTreeSet<T>,
 }
-
 impl<T: Ord> Default for ButtonInput<T> {
     /// Creates an empty input state.
     fn default() -> Self {
@@ -44,7 +42,6 @@ impl<T: Ord> Default for ButtonInput<T> {
         }
     }
 }
-
 impl<T: Ord + Copy> ButtonInput<T> {
     /// Records a button as newly pressed.
     pub fn press(&mut self, input: T) {
@@ -82,11 +79,10 @@ impl<T: Ord + Copy> ButtonInput<T> {
 
 /// Polls the physical buttons and updates [`ButtonInput`] every frame.
 pub struct MicrobitInputPlugin;
-
 impl Plugin for MicrobitInputPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ButtonInput::<GameButton>::default());
-        app.add_systems(PreFrame, read_buttons);
+        app.add_systems(PreUpdate, read_buttons);
     }
 }
 

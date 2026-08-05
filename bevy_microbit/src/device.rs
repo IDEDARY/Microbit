@@ -41,7 +41,6 @@ unsafe impl Sync for Device {}
 /// Seeded once from the on-die nRF51 hardware RNG at startup.
 #[derive(Resource)]
 pub struct Entropy(Wyrand);
-
 impl Entropy {
     /// Returns a value uniformly within `0..end`.
     pub fn next_below(&mut self, end: usize) -> usize {
@@ -52,7 +51,6 @@ impl Entropy {
 /// Discovers the micro:bit board and turns it into the [`Device`]/[`Entropy`]
 /// resources. Must be registered before any other platform plugin.
 pub struct MicrobitDevicePlugin;
-
 impl Plugin for MicrobitDevicePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_device);

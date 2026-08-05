@@ -4,19 +4,18 @@
 //! OS clock, [`MicrobitTimePlugin`] advances the shared `Time` resource by a
 //! fixed frame duration once per frame, so `Res<Time>` behaves like on desktop.
 
-use bevy_app::{App, Plugin};
+use bevy_app::{App, Plugin, PreUpdate};
 use bevy_ecs::prelude::ResMut;
 use bevy_time::Time;
 
-use crate::app::{FRAME_MILLIS, PreFrame};
+use crate::app::FRAME_MILLIS;
 
 /// Advances `Time` by one frame's worth of wall-clock time every frame.
 pub struct MicrobitTimePlugin;
-
 impl Plugin for MicrobitTimePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Time::<()>::default());
-        app.add_systems(PreFrame, advance_time);
+        app.add_systems(PreUpdate, advance_time);
     }
 }
 

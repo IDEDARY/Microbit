@@ -49,11 +49,8 @@ pub use bevy_time;
 /// installs device discovery, time, input, and LED rendering in one go.
 #[derive(Default)]
 pub struct MicrobitPlugins;
-
 impl bevy_app::Plugin for MicrobitPlugins {
     fn build(&self, app: &mut bevy_app::App) {
-        // Install the embedded runner so `App::new().add_plugins(..).run()`
-        // drives the LED matrix instead of a desktop window.
         app.set_runner(crate::app::microbit_runner);
         app.add_plugins((
             device::MicrobitDevicePlugin,
@@ -73,7 +70,6 @@ pub mod prelude {
     pub use bevy_ecs_macros::{Component, Resource};
     pub use bevy_time::{Time, Timer, TimerMode};
 
-    pub use crate::app::{PreFrame, Tick, microbit_runner};
     pub use crate::device::Entropy;
     pub use crate::framebuffer::FrameBuffer;
     pub use crate::input::{ButtonInput, GameButton};

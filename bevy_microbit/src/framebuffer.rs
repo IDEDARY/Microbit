@@ -19,14 +19,12 @@ pub struct FrameBuffer {
     /// The pixel matrix, indexed as `grid[row][column]`.
     grid: [[bool; WIDTH]; HEIGHT],
 }
-
 impl Default for FrameBuffer {
     /// Creates an all-off frame buffer.
     fn default() -> Self {
         Self::new()
     }
 }
-
 impl FrameBuffer {
     /// Creates a new, fully cleared frame buffer.
     pub fn new() -> Self {

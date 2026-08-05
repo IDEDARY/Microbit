@@ -65,7 +65,6 @@ struct GameState {
     /// Whether the last round has ended (awaiting a reset).
     game_over: bool,
 }
-
 impl Default for GameState {
     /// Starts a fresh round.
     fn default() -> Self {
@@ -81,7 +80,6 @@ struct GameTimers {
     /// Drives the falling movement.
     fall: Timer,
 }
-
 impl GameTimers {
     /// Creates the timers with the configured cadences.
     fn new() -> Self {
@@ -100,14 +98,20 @@ impl GameTimers {
 
 /// Registers the game's resources, entities, and systems.
 pub struct GamePlugin;
-
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup)
-            .add_systems(
-                Update,
-                (player_input, spawn_debris, fall_debris, collision, reset, draw).chain(),
-            );
+        /* app.add_systems(Startup, setup);
+        app.add_systems(Update, (
+            player_input,
+            spawn_debris,
+            fall_debris,
+            collision,
+            reset,
+            draw,
+        ).chain()); */
+        app.add_systems(Update, |mut frame: ResMut<FrameBuffer>| {
+            frame.set(0, 0, true);
+        });
     }
 }
 
