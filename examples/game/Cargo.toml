@@ -15,6 +15,7 @@
    cortex-m                  = { version = "0.7.8", features = ["critical-section-single-core"] }
    cortex-m-rt               = "0.7.6"
    heapless.workspace        = true
+   micromath                 = "2.1"
    panic-rtt-target          = "0.2.0"
    rtt-target                = "0.6.2"
    tiny_ecs.workspace        = true

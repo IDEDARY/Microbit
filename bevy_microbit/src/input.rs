@@ -47,17 +47,29 @@ impl<T: 'static> Default for ButtonInput<T> {
 }
 
 impl<T: ButtonKey + 'static> ButtonInput<T> {
-    /// Records a button as newly pressed.
+    /// Records a button as pressed.
+    ///
+    /// `just_pressed` is only set on a rising edge (button was not already held),
+    /// mirroring `bevy_input::ButtonInput::press`. This lets the polling loop
+    /// call `press` every frame without falsely reporting repeated presses.
     pub fn press(&mut self, input: T) {
         let i = input.index();
-        self.just_pressed[i] = true;
+        if !self.pressed[i] {
+            self.just_pressed[i] = true;
+        }
         self.pressed[i] = true;
     }
 
     /// Records a button as released.
+    ///
+    /// `just_released` is only set on a falling edge (button was held), mirroring
+    /// the edge semantics of `press`. Calling `release` every frame while a
+    /// button is idle therefore does not spam `just_released`.
     pub fn release(&mut self, input: T) {
         let i = input.index();
-        self.just_released[i] = true;
+        if self.pressed[i] {
+            self.just_released[i] = true;
+        }
         self.pressed[i] = false;
     }
 

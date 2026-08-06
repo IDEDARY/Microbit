@@ -1,4 +1,7 @@
+use core::ops::Mul;
+
 use bevy_microbit::prelude::*;
+use micromath::F32Ext;
 
 /// Logical width of the playfield (matches the LED matrix columns).
 const WIDTH: usize = 5;
@@ -7,9 +10,9 @@ const HEIGHT: usize = 5;
 /// Minimum time between two player moves, in seconds.
 const MOVE_COOLDOWN_SECS: f32 = 0.05;
 /// How often a new row of debris is spawned, in seconds.
-const SPAWN_INTERVAL_SECS: f32 = 0.5;
+const SPAWN_INTERVAL_SECS: f32 = 2.0;
 /// How often debris falls one row, in seconds.
-const FALL_INTERVAL_SECS: f32 = 0.1;
+const FALL_INTERVAL_SECS: f32 = 1.0;
 
 /// The set of falling silhouette rows that can spawn, one per entry.
 const OBSTACLES: [[bool; WIDTH]; 11] = [
@@ -240,12 +243,21 @@ fn reset(
 
 /// Renders the player and all debris into the shared frame buffer.
 #[system]
-fn draw(mut frame: ResMut<FrameBuffer>, player: Query<&Player>, debris: Query<&Debris>) {
+fn draw(mut frame: ResMut<FrameBuffer>, state: Res<GameState>, player: Query<&Player>, debris: Query<&Debris>, time: Res<Time>) {
     frame.clear();
-    if let Ok(player) = player.single() {
-        frame.set(player.x, HEIGHT - 1, true);
+
+    if state.game_over {
+        frame.fill_rect(0, 0, WIDTH, HEIGHT, (time.elapsed().as_secs_f32().mul(5.0).sin() * 128.0 + 128.0) as u8);
+        return;
     }
+
+    // Draw player
+    if let Ok(player) = player.single() {
+        frame.set(player.x, HEIGHT - 1, 255);
+    }
+
+    // Draw debris
     for piece in &debris {
-        frame.set(piece.x, piece.y, true);
+        frame.set(piece.x, piece.y, 10);
     }
 }
