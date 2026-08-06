@@ -7,7 +7,7 @@
 # reads like a desktop app.
 [workspace]
 resolver = "2"
-members = ["tiny_ecs", "tiny_ecs_macros", "bevy_microbit", "examples/game"]
+members = ["tiny_ecs", "tiny_ecs_macros", "bevy_microbit", "examples/game", "examples/snake"]
 
 [workspace.package]
 version = "0.1.0"
