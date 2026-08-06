@@ -81,16 +81,15 @@ pub fn define_world(input: TokenStream) -> TokenStream {
 // --- `#[system]` -----------------------------------------------------
 
 /// Recognises the system param types inside a `fn` signature.
-#[derive(Clone)]
 enum SystemParam {
     /// `Res<T>`: shared immutable resource.
-    Res(syn::Type, bool /*mut binding*/),
+    Res(syn::Type),
     /// `ResMut<T>`: exclusive mutable resource.
-    ResMut(syn::Type, bool /*mut binding*/),
+    ResMut(syn::Type),
     /// `Query<P>`: a query over component columns.
-    Query(syn::Type, bool /*mut binding*/),
+    Query(syn::Type),
     /// `Commands`: spawn / despawn / insert_resource handle.
-    Commands(bool /*mut binding*/),
+    Commands,
 }
 
 /// The `#[system]` attribute macro.
@@ -148,16 +147,16 @@ fn expand_system(item: ItemFn) -> syn::Result<TokenStream2> {
     bounds.push(parse_quote!(Sized));
     for (p, _, _) in &params {
         match p {
-            SystemParam::Query(ty, _) => {
+            SystemParam::Query(ty) => {
                 for comp in components_in_fetch(ty) {
                     bounds.push(parse_quote!(::tiny_ecs::system::ColumnRef<#comp>));
                     bounds.push(parse_quote!(::tiny_ecs::system::SpawnRef<#comp>));
                 }
             }
-            SystemParam::Res(ty, _) | SystemParam::ResMut(ty, _) => {
+            SystemParam::Res(ty) | SystemParam::ResMut(ty) => {
                 bounds.push(parse_quote!(::tiny_ecs::system::HasResource<#ty>));
             }
-            SystemParam::Commands(_) => {
+            SystemParam::Commands => {
                 bounds.push(parse_quote!(::tiny_ecs::system::CommandsRef));
             }
         }
@@ -168,7 +167,7 @@ fn expand_system(item: ItemFn) -> syn::Result<TokenStream2> {
     for (p, ident, mut_b) in &params {
         let mut_kw = if *mut_b { quote!(mut) } else { quote!() };
         match p {
-            SystemParam::Res(ty, _) => {
+            SystemParam::Res(ty) => {
                 bindings.push(quote! {
                     let #mut_kw #ident: ::tiny_ecs::system::Res<'_, #ty> = {
                         // SAFETY: `__w` is valid for this system's duration.
@@ -179,7 +178,7 @@ fn expand_system(item: ItemFn) -> syn::Result<TokenStream2> {
                     };
                 });
             }
-            SystemParam::ResMut(ty, _) => {
+            SystemParam::ResMut(ty) => {
                 bindings.push(quote! {
                     let #mut_kw #ident: ::tiny_ecs::system::ResMut<'_, #ty> = {
                         // SAFETY: `__w` is valid for this system's duration.
@@ -190,14 +189,14 @@ fn expand_system(item: ItemFn) -> syn::Result<TokenStream2> {
                     };
                 });
             }
-            SystemParam::Query(ty, _) => {
+            SystemParam::Query(ty) => {
                 bindings.push(quote! {
                     let #mut_kw #ident: ::tiny_ecs::system::Query<'_, #ty, #w> =
                         // SAFETY: `__w` is a valid `*mut #w`.
                         unsafe { ::tiny_ecs::system::Query::from_world(__w) };
                 });
             }
-            SystemParam::Commands(_) => {
+            SystemParam::Commands => {
                 bindings.push(quote! {
                     let #mut_kw #ident: ::tiny_ecs::commands::Commands<'_, #w> = {
                         // SAFETY: `__w` is valid and the command buffer is distinct.
@@ -249,7 +248,7 @@ fn parse_param_type(ty: &syn::Type) -> Option<SystemParam> {
     let seg = path.segments.last()?;
     let ident = seg.ident.to_string();
     if ident == "Commands" {
-        return Some(SystemParam::Commands(false));
+        return Some(SystemParam::Commands);
     }
     // Single-segment generic: `Res<...>`, `ResMut<...>`, `Query<...>`.
     let args = match &seg.arguments {
@@ -262,9 +261,9 @@ fn parse_param_type(ty: &syn::Type) -> Option<SystemParam> {
         _ => return None,
     };
     match ident.as_str() {
-        "Res" => Some(SystemParam::Res(inner_ty, false)),
-        "ResMut" => Some(SystemParam::ResMut(inner_ty, false)),
-        "Query" => Some(SystemParam::Query(inner_ty, false)),
+        "Res" => Some(SystemParam::Res(inner_ty)),
+        "ResMut" => Some(SystemParam::ResMut(inner_ty)),
+        "Query" => Some(SystemParam::Query(inner_ty)),
         _ => None,
     }
 }
